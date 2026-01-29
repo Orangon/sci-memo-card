@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import type { CreateFlashcardDTO } from '@/lib/types'
+import { getDefaultDomain } from '@/lib/settings'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,11 +13,12 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 
 export function FlashcardForm() {
+  // Initialize domain with default from settings
   const [sentence, setSentence] = useState('')
   const [word, setWord] = useState('')
   const [translation, setTranslation] = useState('')
   const [definition, setDefinition] = useState('')
-  const [domain, setDomain] = useState('')
+  const [domain, setDomain] = useState(getDefaultDomain())
   const queryClient = useQueryClient()
   const { toast } = useToast()
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,12 +8,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { apiClient } from '@/lib/api'
+import { getDefaultDomain, saveDefaultDomain } from '@/lib/settings'
 
 export default function SettingsPage() {
   const { toast } = useToast()
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
+  const [defaultDomain, setDefaultDomain] = useState('')
+
+  // Load default domain on mount
+  useEffect(() => {
+    const savedDomain = getDefaultDomain()
+    setDefaultDomain(savedDomain)
+  }, [])
 
   // Handle export functionality
   const handleExport = async () => {
@@ -205,7 +213,29 @@ export default function SettingsPage() {
               {/* Default Domain */}
               <div>
                 <Label>默认学科领域</Label>
-                <Input placeholder="例如: 计算机科学, 生物学..." />
+                <div className="text-sm text-gray-500 mt-1 mb-2">
+                  新建闪卡时将自动填充此学科领域
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="例如: 计算机科学, 生物学..."
+                    value={defaultDomain}
+                    onChange={(e) => setDefaultDomain(e.target.value)}
+                  />
+                  <Button
+                    onClick={() => {
+                      saveDefaultDomain(defaultDomain)
+                      toast({
+                        title: '保存成功',
+                        description: '默认学科领域已更新',
+                      })
+                    }}
+                    disabled={false}
+                    variant="outline"
+                  >
+                    保存
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
