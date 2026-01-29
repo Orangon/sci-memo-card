@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // reactStrictMode is enabled by default in Next.js 15+
-  eslint: {
-    // Allow ESLint to run during production builds
-    ignoreDuringBuilds: false,
-  },
   images: {
     remotePatterns: [
       {

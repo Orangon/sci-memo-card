@@ -56,7 +56,7 @@ async function readFlashcards(): Promise<Flashcard[]> {
 
   try {
     const data = await fs.readFile(DATA_FILE_PATH, 'utf-8')
-    flashcardsCache = JSON.parse(data)
+    flashcardsCache = JSON.parse(data) as Flashcard[]
     return flashcardsCache
   } catch {
     // File doesn't exist or is invalid, create initial data
