@@ -1,26 +1,40 @@
 'use client'
 
-import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import type { CreateFlashcardDTO } from '@/lib/types'
 import { getDefaultDomain } from '@/lib/settings'
+import { flashcardSchema, type FlashcardFormData } from '@/lib/flashcard-schema'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 
 export function FlashcardForm() {
-  // Initialize domain with default from settings
-  const [sentence, setSentence] = useState('')
-  const [word, setWord] = useState('')
-  const [translation, setTranslation] = useState('')
-  const [definition, setDefinition] = useState('')
-  const [domain, setDomain] = useState(getDefaultDomain())
   const queryClient = useQueryClient()
   const { toast } = useToast()
+
+  const form = useForm<FlashcardFormData>({
+    resolver: zodResolver(flashcardSchema),
+    defaultValues: {
+      sentence: '',
+      word: '',
+      translation: '',
+      definition: '',
+      domain: getDefaultDomain(),
+    },
+    mode: 'onBlur',
+  })
 
   const createMutation = useMutation({
     mutationFn: (data: CreateFlashcardDTO) => apiClient.createFlashcard(data),
@@ -30,11 +44,7 @@ export function FlashcardForm() {
         description: `闪卡 "${data.word}" 已添加`,
       })
       // Reset form
-      setSentence('')
-      setWord('')
-      setTranslation('')
-      setDefinition('')
-      setDomain('')
+      form.reset()
       // Invalidate review cache
       queryClient.invalidateQueries({ queryKey: ['daily-random-cards'] })
     },
@@ -47,23 +57,8 @@ export function FlashcardForm() {
     },
   })
 
-  const handleSubmit = () => {
-    if (!sentence || !word || !translation) {
-      toast({
-        title: '警告',
-        description: '请填写完整的闪卡信息',
-        variant: 'destructive'
-      })
-      return
-    }
-
-    createMutation.mutate({
-      sentence,
-      word,
-      translation,
-      definition,
-      domain,
-    })
+  const onSubmit = (data: FlashcardFormData) => {
+    createMutation.mutate(data)
   }
 
   return (
@@ -73,63 +68,103 @@ export function FlashcardForm() {
         <CardDescription>从科研文献中提取生词并添加上下文</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="sentence">文献句子</Label>
-            <Textarea
-              id="sentence"
-              placeholder="粘贴包含生词的科研文献句子..."
-              value={sentence}
-              onChange={(e) => setSentence(e.target.value)}
-              className="min-h-[100px]"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="sentence"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>文献句子 *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="粘贴包含生词的科研文献句子..."
+                      className="min-h-[100px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="word">生词</Label>
-            <Input
-              id="word"
-              placeholder="输入生词..."
-              value={word}
-              onChange={(e) => setWord(e.target.value)}
+            <FormField
+              control={form.control}
+              name="word"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>生词 *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="输入生词..."
+                      className="min-h-[60px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="translation">中文翻译</Label>
-            <Input
-              id="translation"
-              placeholder="输入中文翻译..."
-              value={translation}
-              onChange={(e) => setTranslation(e.target.value)}
+            <FormField
+              control={form.control}
+              name="translation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>中文翻译 *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="输入中文翻译..."
+                      className="min-h-[60px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="definition">学术定义</Label>
-            <Textarea
-              id="definition"
-              placeholder="输入学术定义和解释..."
-              value={definition}
-              onChange={(e) => setDefinition(e.target.value)}
-              className="min-h-[80px]"
+            <FormField
+              control={form.control}
+              name="definition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>学术定义</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="输入学术定义和解释..."
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="domain">学科领域</Label>
-            <Input
-              id="domain"
-              placeholder="输入学科领域..."
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
+            <FormField
+              control={form.control}
+              name="domain"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>学科领域</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="输入学科领域..."
+                      className="min-h-[60px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <Button onClick={handleSubmit} className="w-full" disabled={createMutation.isPending}>
-            {createMutation.isPending ? '添加中...' : '添加闪卡'}
-          </Button>
-        </div>
+            <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+              {createMutation.isPending ? '添加中...' : '添加闪卡'}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )
