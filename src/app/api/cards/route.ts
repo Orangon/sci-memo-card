@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { storage } from '@/lib/storage'
 import { CreateFlashcardDTO } from '@/lib/types'
 
+// GET /api/cards/ - List all flashcards
+export async function GET() {
+  try {
+    const cards = await storage.getAll()
+    return NextResponse.json(cards)
+  } catch (error) {
+    console.error('Error fetching flashcards:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch flashcards' },
+      { status: 500 }
+    )
+  }
+}
+
 // POST /api/cards/ - Create new flashcard
 export async function POST(request: NextRequest) {
   try {
