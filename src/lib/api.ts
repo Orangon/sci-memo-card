@@ -80,13 +80,16 @@ class ApiClient {
   }
 
   // Import data
-  async importData(cards: any[]): Promise<{
+  async importData(
+    cards: any[],
+    mode: 'overwrite' | 'append' = 'append'
+  ): Promise<{
     message: string
     imported: number
     total: number
     errors?: Array<{ index: number; error: string }>
   }> {
-    return this.request('/cards/import', {
+    return this.request(`/cards/import?mode=${mode}`, {
       method: 'POST',
       body: JSON.stringify(cards),
     })

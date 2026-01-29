@@ -5,6 +5,7 @@ import { Flashcard, CreateFlashcardDTO } from '@/lib/types'
 // POST /api/cards/import - Import flashcards from JSON
 export async function POST(request: NextRequest) {
   try {
+    const mode = request.nextUrl.searchParams.get('mode') || 'append'
     const body = await request.json()
 
     // Validate input
@@ -13,6 +14,19 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid input: expected an array of flashcards' },
         { status: 400 }
       )
+    }
+
+    // Validate mode
+    if (mode !== 'overwrite' && mode !== 'append') {
+      return NextResponse.json(
+        { error: 'Invalid mode: must be "overwrite" or "append"' },
+        { status: 400 }
+      )
+    }
+
+    // Clear existing data if overwrite mode
+    if (mode === 'overwrite') {
+      await storage.clear()
     }
 
     const importedCards: Flashcard[] = []
@@ -51,8 +65,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const modeText = mode === 'overwrite' ? '覆盖' : '追加'
     return NextResponse.json({
-      message: `Successfully imported ${importedCards.length} flashcards`,
+      message: `${modeText}导入完成：成功导入 ${importedCards.length} 张闪卡`,
       imported: importedCards.length,
       total: body.length,
       errors: errors.length > 0 ? errors : undefined

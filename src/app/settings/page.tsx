@@ -1,21 +1,37 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { apiClient } from '@/lib/api'
 import { getDefaultDomain, saveDefaultDomain } from '@/lib/settings'
 
+type ImportMode = 'overwrite' | 'append'
+
 export default function SettingsPage() {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
   const [defaultDomain, setDefaultDomain] = useState('')
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [selectedImportMode, setSelectedImportMode] = useState<ImportMode | null>(null)
 
   // Load default domain on mount
   useEffect(() => {
@@ -73,8 +89,32 @@ export default function SettingsPage() {
     }
   }
 
-  // Handle import functionality
+  // Handle import functionality - first show confirmation dialog
+  const handleImportClick = () => {
+    if (!importFile) {
+      toast({
+        title: '未选择文件',
+        description: '请先选择要导入的 JSON 文件',
+        variant: 'destructive',
+      })
+      return
+    }
+    setShowImportDialog(true)
+  }
+
+  // Handle import functionality - execute import
   const handleImport = async () => {
+    if (!selectedImportMode) {
+      toast({
+        title: '未选择导入方式',
+        description: '请选择一种导入方式',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setShowImportDialog(false)
+
     if (!importFile) {
       toast({
         title: '未选择文件',
@@ -95,16 +135,20 @@ export default function SettingsPage() {
         throw new Error('Invalid file format: expected an array of flashcards')
       }
 
-      // Import via API
-      const result = await apiClient.importData(cards)
+      // Import via API with mode
+      const result = await apiClient.importData(cards, selectedImportMode)
+
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries()
 
       toast({
         title: '导入完成',
         description: result.message || `成功导入 ${result.imported}/${result.total} 张闪卡`,
       })
 
-      // Clear file input
+      // Clear file input and selection
       setImportFile(null)
+      setSelectedImportMode(null)
       const fileInput = document.getElementById('import-file') as HTMLInputElement
       if (fileInput) {
         fileInput.value = ''
@@ -202,7 +246,7 @@ export default function SettingsPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={handleImport}
+                    onClick={handleImportClick}
                     disabled={!importFile || isImporting}
                   >
                     {isImporting ? '导入中...' : '导入数据'}
@@ -237,10 +281,105 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Danger Zone */}
+              <div className="space-y-4 pt-4 border-t">
+                <Label className="text-red-600">危险操作</Label>
+                <div className="border border-red-200 rounded-lg p-4 space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      ⚠️ 警告：此操作将永久删除所有闪卡数据，且无法恢复
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={async () => {
+                      if (!confirm('确定要清空所有数据吗？此操作无法撤销！')) {
+                        return
+                      }
+                      try {
+                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/cards/clear`, {
+                          method: 'DELETE',
+                        })
+                        if (!response.ok) {
+                          throw new Error('Failed to clear data')
+                        }
+                        queryClient.invalidateQueries()
+                        toast({
+                          title: '清空成功',
+                          description: '所有数据已清空',
+                        })
+                      } catch (error) {
+                        console.error('Clear error:', error)
+                        toast({
+                          title: '清空失败',
+                          description: '清空数据时出现错误',
+                          variant: 'destructive',
+                        })
+                      }
+                    }}
+                  >
+                    清空所有数据
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Import Confirmation Dialog */}
+      <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>选择导入方式</AlertDialogTitle>
+            <AlertDialogDescription>
+              请选择如何处理导入的数据：
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-4">
+            <button
+              onClick={() => setSelectedImportMode('append')}
+              className={`w-full justify-start text-left h-auto py-4 px-4 rounded-lg border-2 transition-colors ${
+                selectedImportMode === 'append'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="space-y-1">
+                <div className="font-medium">增加到已有数据中</div>
+                <div className="text-sm text-gray-500">
+                  将新闪卡添加到现有数据中，保留原有的所有闪卡
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setSelectedImportMode('overwrite')}
+              className={`w-full justify-start text-left h-auto py-4 px-4 rounded-lg border-2 transition-colors ${
+                selectedImportMode === 'overwrite'
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-orange-200 hover:border-orange-300 hover:bg-orange-50/50'
+              }`}
+            >
+              <div className="space-y-1">
+                <div className={`font-medium ${selectedImportMode === 'overwrite' ? 'text-orange-700' : ''}`}>
+                  覆盖现有数据
+                </div>
+                <div className="text-sm text-gray-500">
+                  ⚠️ 警告：这将删除所有现有闪卡，只保留导入的数据
+                </div>
+              </div>
+            </button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedImportMode(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleImport} disabled={!selectedImportMode || isImporting}>
+              {isImporting ? '导入中...' : '确认导入'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

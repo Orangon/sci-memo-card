@@ -136,6 +136,11 @@ export const storage = {
     return true
   },
 
+  // Clear all flashcards
+  async clear(): Promise<void> {
+    await writeFlashcards([])
+  },
+
   // Get daily random cards (weighted by mastery level)
   async getDailyRandom(limit: number = 10): Promise<Flashcard[]> {
     const cards = await readFlashcards()
