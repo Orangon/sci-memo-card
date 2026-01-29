@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const metadata: Metadata = {
   title: 'SciMemoCard - 科研单词闪卡',
   description: '基于语境记忆和间隔重复的科学学习工具',

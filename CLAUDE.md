@@ -149,17 +149,20 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
 ## Development Commands
 
 ```bash
-# Start development server (runs on http://localhost:3001)
-npm run dev
+# Install dependencies
+pnpm install
+
+# Start development server (runs on http://localhost:3020)
+pnpm dev
 
 # Build for production
-npm run build
+pnpm build
 
 # Start production server
-npm start
+pnpm start
 
 # Run linter
-npm run lint
+pnpm lint
 ```
 
 ## Important Notes

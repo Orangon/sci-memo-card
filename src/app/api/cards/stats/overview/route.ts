@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { storage } from '@/lib/storage'
 
 // GET /api/cards/stats/overview - Get learning statistics
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const stats = await storage.getStats()
 

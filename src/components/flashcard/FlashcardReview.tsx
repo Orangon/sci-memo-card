@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
-import type { Flashcard } from '@/lib/types'
 import { FlashcardDisplay } from './FlashcardDisplay'
 import { ReviewButtons } from './ReviewButtons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
