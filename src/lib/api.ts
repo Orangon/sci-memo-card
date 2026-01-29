@@ -64,8 +64,32 @@ class ApiClient {
   }
 
   // Export data
-  async exportData(): Promise<any> {
-    return this.request('/cards/export/json')
+  async exportData(): Promise<Blob> {
+    const url = `${this.baseUrl}/cards/export/json`
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`)
+    }
+
+    return response.blob()
+  }
+
+  // Import data
+  async importData(cards: any[]): Promise<{
+    message: string
+    imported: number
+    total: number
+    errors?: Array<{ index: number; error: string }>
+  }> {
+    return this.request('/cards/import', {
+      method: 'POST',
+      body: JSON.stringify(cards),
+    })
   }
 }
 
