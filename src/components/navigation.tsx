@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils'
 import { FlipHorizontal, Plus, BarChart3, Settings } from 'lucide-react'
 
 const navItems = [
-  { href: '/review', label: '复习', icon: FlipHorizontal },
   { href: '/add', label: '添加', icon: Plus },
+  { href: '/review', label: '复习', icon: FlipHorizontal },
   { href: '/stats', label: '统计', icon: BarChart3 },
   { href: '/settings', label: '设置', icon: Settings },
 ]
@@ -19,7 +19,7 @@ export function Navigation() {
     <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/review" className="text-xl font-bold text-gray-800 dark:text-gray-100">
+          <Link href="/add" className="text-xl font-bold text-gray-800 dark:text-gray-100">
             科研单词闪卡
           </Link>
           <div className="flex gap-2">
