@@ -51,17 +51,17 @@ export function FlashcardDisplay({
             <BookOpen className="w-4 h-4 mr-1" />
             科研文献句子
           </div>
-          <p className="text-xl text-gray-800 dark:text-gray-100 mb-6 leading-relaxed font-serif break-words">
+          <p className="text-xl text-gray-800 dark:text-gray-100 mb-6 leading-relaxed font-serif break-keep">
             {card.sentence.split(' ').map((word, index) =>
               word.toLowerCase() === card.word.toLowerCase() ? (
                 <span
                   key={index}
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-2 py-1 rounded-lg font-bold mx-1 shadow-md hover:shadow-lg transition-shadow duration-200 break-words"
+                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-2 py-1 rounded-lg font-bold mx-1 shadow-md hover:shadow-lg transition-shadow duration-200 whitespace-nowrap"
                 >
                   {word}
                 </span>
               ) : (
-                <span key={index} className="mx-1">{word}</span>
+                <span key={index} className="mx-1 inline-block">{word}</span>
               )
             )}
           </p>
