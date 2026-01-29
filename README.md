@@ -25,16 +25,7 @@
 
 ## 🛠️ 技术栈
 
-### 前端
-- **Vite** + **React 18** + **TypeScript**
-- **Tailwind CSS** - 原子化CSS框架
-- **shadcn/ui** - 现代化UI组件库
-- **Lucide React** - 精美图标库
 
-### 后端
-- **FastAPI** - 高性能Python Web框架
-- **SQLite** - 轻量级数据库（开发环境）
-- **Pydantic** - 数据验证和序列化
 
 ## 🚀 快速开始
 
@@ -43,7 +34,7 @@
 - Python 3.8+
 - npm 或 yarn
 
-### 前端开发
+### 开发
 ```bash
 # 进入项目目录
 cd sci-memo-card
@@ -53,21 +44,6 @@ npm install
 
 # 启动开发服务器
 npm run dev
-```
-
-### 后端开发
-```bash
-# 创建并激活虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
-venv\Scripts\activate     # Windows
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 启动FastAPI服务
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## 📁 项目结构
@@ -81,14 +57,6 @@ sci-memo-card/
 │   ├── App.tsx             # 主应用组件
 │   ├── main.tsx            # 应用入口
 │   └── globals.css         # 全局样式
-├── backend/                # 后端服务
-│   ├── app/
-│   │   ├── models/         # 数据模型
-│   │   ├── routes/         # API路由
-│   │   ├── services/       # 业务逻辑
-│   │   └── main.py         # 应用入口
-│   ├── tests/              # 测试用例
-│   └── requirements.txt    # Python依赖
 ├── package.json            # 前端依赖配置
 └── README.md              # 项目说明
 ```
