@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '10', 10)
 
-    const cards = await storage.getDailyRandom(limit)
+    const cards = await dbRepository.getDailyRandom(limit)
 
     return NextResponse.json(cards)
   } catch (error) {

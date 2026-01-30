@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 // GET /api/cards/export/json - Export all flashcards as JSON
 export async function GET() {
   try {
-    const cards = await storage.getAll()
+    const cards = await dbRepository.getAll()
 
     return NextResponse.json(cards, {
       status: 200,

@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres'
+import { prisma } from './prisma'
 import { Flashcard } from './types'
 import fs from 'fs/promises'
 import path from 'path'
@@ -34,16 +34,26 @@ export async function migrateFromJsonFile(): Promise<number> {
 
     for (const card of flashcards) {
       // Check if card already exists (by ID)
-      const existingResult = await sql`
-        SELECT id FROM flashcards WHERE id = ${card.id}
-      `
+      const existing = await prisma.flashcard.findUnique({
+        where: { id: card.id }
+      })
 
-      if (existingResult.rows.length === 0) {
+      if (!existing) {
         // Insert new card
-        await sql`
-          INSERT INTO flashcards (id, sentence, word, translation, definition, domain, mastery, review_count, next_review, created_at)
-          VALUES (${card.id}, ${card.sentence}, ${card.word}, ${card.translation}, ${card.definition || ''}, ${card.domain || '通用'}, ${card.mastery}, ${card.review_count}, ${card.next_review}, ${card.created_at})
-        `
+        await prisma.flashcard.create({
+          data: {
+            id: card.id,
+            sentence: card.sentence,
+            word: card.word,
+            translation: card.translation,
+            definition: card.definition,
+            domain: card.domain,
+            mastery: card.mastery,
+            reviewCount: card.review_count,
+            nextReview: new Date(card.next_review),
+            createdAt: new Date(card.created_at)
+          }
+        })
         migratedCount++
       } else {
         console.log(`Card with id ${card.id} already exists, skipping`)
@@ -65,26 +75,22 @@ export async function migrateFromJsonFile(): Promise<number> {
  */
 export async function exportToJson(): Promise<Flashcard[]> {
   try {
-    const result = await sql`
-      SELECT id, sentence, word, translation, definition, domain, mastery, review_count, next_review, created_at
-      FROM flashcards
-      ORDER BY created_at DESC
-    `
+    const flashcards = await prisma.flashcard.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
 
-    const flashcards: Flashcard[] = result.rows.map(row => ({
-      id: row.id,
-      sentence: row.sentence,
-      word: row.word,
-      translation: row.translation,
-      definition: row.definition,
-      domain: row.domain,
-      mastery: row.mastery,
-      review_count: row.review_count,
-      next_review: row.next_review,
-      created_at: row.created_at
+    return flashcards.map(card => ({
+      id: card.id,
+      sentence: card.sentence,
+      word: card.word,
+      translation: card.translation,
+      definition: card.definition || '',
+      domain: card.domain,
+      mastery: card.mastery as 1 | 2 | 3,
+      review_count: card.reviewCount,
+      next_review: card.nextReview.toISOString(),
+      created_at: card.createdAt.toISOString()
     }))
-
-    return flashcards
   } catch (error) {
     console.error('Export failed:', error)
     throw error

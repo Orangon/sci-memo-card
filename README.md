@@ -13,9 +13,40 @@
 
 ## 🛠️ 技术栈
 
-Next.js 16 + React 19 + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query
+Next.js 16 + React 19 + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query + Vercel Postgres
 
 ## 🚀 快速开始
+
+### 1. 启动 PostgreSQL (使用 Docker)
+
+```bash
+# 启动 PostgreSQL 容器 (端口 5435)
+docker run -d --name sci-memo-postgres \
+  -e POSTGRES_USER=scimemo \
+  -e POSTGRES_PASSWORD=scimemo123 \
+  -e POSTGRES_DB=scimemocard \
+  -p 5435:5432 \
+  postgres:15-alpine
+
+# 查看容器状态
+docker ps | grep sci-memo-postgres
+
+# 停止容器
+docker stop sci-memo-postgres
+```
+
+### 2. 配置环境变量
+
+创建 `.env.local`:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=/api
+POSTGRES_URL="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+POSTGRES_PRISMA_URL="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+POSTGRES_URL_NON_POOLING="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+```
+
+### 3. 安装依赖并启动
 
 ```bash
 # 安装依赖
@@ -74,13 +105,14 @@ interface Flashcard {
 
 每日复习卡片使用**加权随机选择** - 低掌握度的卡片有更高概率被选中。
 
-## 📝 环境变量
+## 📝 环境变量说明
 
-创建 `.env.local`:
-
-```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
-```
+| 变量名 | 说明 | 示例值 |
+|--------|------|--------|
+| `NEXT_PUBLIC_API_BASE_URL` | API 基础路径 | `/api` |
+| `POSTGRES_URL` | PostgreSQL 连接字符串 (带连接池) | `postgresql://user:pass@localhost:5435/db` |
+| `POSTGRES_PRISMA_URL` | Prisma ORM 连接字符串 | 同上 |
+| `POSTGRES_URL_NON_POOLING` | 直连 PostgreSQL 字符串 | 同上 |
 
 ## 📄 许可证
 

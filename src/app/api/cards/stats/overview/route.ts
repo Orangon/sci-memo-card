@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 // GET /api/cards/stats/overview - Get learning statistics
 export async function GET(_request: NextRequest) {
   try {
-    const stats = await storage.getStats()
+    const stats = await dbRepository.getStats()
 
     return NextResponse.json(stats)
   } catch (error) {

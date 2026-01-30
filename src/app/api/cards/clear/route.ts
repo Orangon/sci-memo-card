@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 // DELETE /api/cards/clear - Clear all flashcards
 export async function DELETE() {
   try {
-    await storage.clear()
+    await dbRepository.clear()
 
     return NextResponse.json({
       message: 'All flashcards cleared successfully'

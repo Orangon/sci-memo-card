@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 interface ReviewRequestBody {
   mastery: 1 | 2 | 3
@@ -48,7 +48,7 @@ export async function POST(
     }
 
     // Get existing card
-    const existingCard = await storage.getById(cardId)
+    const existingCard = await dbRepository.getById(cardId)
     if (!existingCard) {
       return NextResponse.json(
         { error: 'Flashcard not found' },
@@ -58,7 +58,7 @@ export async function POST(
 
     // Update card with new review data
     const nextReview = calculateNextReview(body.mastery)
-    const updatedCard = await storage.update(cardId, {
+    const updatedCard = await dbRepository.update(cardId, {
       mastery: body.mastery,
       review_count: existingCard.review_count + 1,
       next_review: nextReview.toISOString()

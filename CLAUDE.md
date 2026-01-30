@@ -57,7 +57,38 @@ Review intervals based on mastery level:
 
 The `daily-random` endpoint uses **weighted random selection** - cards with lower mastery levels have higher probability.
 
-## Development Commands
+## Local Development Setup
+
+### 1. Start PostgreSQL with Docker
+
+```bash
+# Start PostgreSQL container (port 5435)
+docker run -d --name sci-memo-postgres \
+  -e POSTGRES_USER=scimemo \
+  -e POSTGRES_PASSWORD=scimemo123 \
+  -e POSTGRES_DB=scimemocard \
+  -p 5435:5432 \
+  postgres:15-alpine
+
+# Check container status
+docker ps | grep sci-memo-postgres
+
+# Stop container when done
+docker stop sci-memo-postgres
+```
+
+### 2. Configure Environment Variables
+
+Create `.env.local` with:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=/api
+POSTGRES_URL="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+POSTGRES_PRISMA_URL="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+POSTGRES_URL_NON_POOLING="postgresql://scimemo:scimemo123@localhost:5435/scimemocard"
+```
+
+### 3. Development Commands
 
 ```bash
 # Install dependencies
@@ -103,17 +134,18 @@ src/
 ├── lib/
 │   ├── api.ts               # API client functions
 │   ├── types.ts             # TypeScript type definitions
-│   └── storage.ts           # Local file-based storage
+│   ├── db.ts                # Database schema initialization
+│   └── storage.ts           # Database operations (Vercel Postgres)
 └── hooks/                   # Custom React hooks
 ```
 
 ## Configuration Files
 
-- `next.config.mjs` - Next.js config with API URL env var
+- `next.config.mjs` - Next.js config
 - `tsconfig.json` - TypeScript with Next.js plugin
 - `tailwind.config.ts` - Tailwind CSS with HSL colors and dark mode
-- `eslint.config.mjs` - ESLint 9 flat config (typescript-eslint, react-hooks, react-refresh)
-- `.env.local` - Environment variables (NEXT_PUBLIC_API_BASE_URL)
+- `eslint.config.mjs` - ESLint 9 flat config
+- `.env.local` - Environment variables (API URL, Postgres connection)
 
 ## ESLint Configuration
 
@@ -127,7 +159,7 @@ ESLint 9 with flat config format:
 ## Important Notes
 
 1. **Single-user app**: No authentication/user management
-2. **Storage**: Local file-based storage (flashcards-data.json)
+2. **Database**: Vercel Postgres (@vercel/postgres) - requires PostgreSQL connection
 3. **State Management**: TanStack Query for server state, React useState for UI state
 4. **Language**: Bilingual (Chinese UI, English code/comments)
 5. **Routing**: File-based via Next.js App Router

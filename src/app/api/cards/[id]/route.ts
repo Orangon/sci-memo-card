@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 
 // GET /api/cards/[id] - Get single flashcard
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
       )
     }
 
-    const card = await storage.getById(cardId)
+    const card = await dbRepository.getById(cardId)
 
     if (!card) {
       return NextResponse.json(
@@ -53,7 +53,7 @@ export async function PUT(
     }
 
     const updates = await request.json()
-    const updatedCard = await storage.update(cardId, updates)
+    const updatedCard = await dbRepository.update(cardId, updates)
 
     if (!updatedCard) {
       return NextResponse.json(
@@ -88,7 +88,7 @@ export async function DELETE(
       )
     }
 
-    const success = await storage.delete(cardId)
+    const success = await dbRepository.delete(cardId)
 
     if (!success) {
       return NextResponse.json(

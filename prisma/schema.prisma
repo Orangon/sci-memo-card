@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Flashcard {
+  id          Int      @id @default(autoincrement())
+  sentence    String   @db.Text
+  word        String   @db.VarChar(255)
+  translation String   @db.Text
+  definition  String?  @db.Text
+  domain      String   @default("通用") @db.VarChar(100)
+  mastery     Int      @default(1) @db.SmallInt
+  reviewCount Int      @default(0) @map("review_count")
+  nextReview  DateTime @default(now()) @map("next_review")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([nextReview], map: "idx_next_review")
+  @@index([domain], map: "idx_domain")
+  @@index([mastery], map: "idx_mastery")
+  @@map("flashcards")
+}

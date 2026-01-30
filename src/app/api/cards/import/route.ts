@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 import { Flashcard, CreateFlashcardDTO } from '@/lib/types'
 
 // POST /api/cards/import - Import flashcards from JSON
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Clear existing data if overwrite mode
     if (mode === 'overwrite') {
-      await storage.clear()
+      await dbRepository.clear()
     }
 
     const importedCards: Flashcard[] = []
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      // Create card using storage
+      // Create card using db-repository
       const cardData: CreateFlashcardDTO = {
         sentence: card.sentence,
         word: card.word,
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const newCard = await storage.create(cardData)
+        const newCard = await dbRepository.create(cardData)
         importedCards.push(newCard)
       } catch (error) {
         errors.push({

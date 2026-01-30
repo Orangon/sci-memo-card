@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { storage } from '@/lib/storage'
+import { dbRepository } from '@/lib/db-repository'
 import { CreateFlashcardDTO } from '@/lib/types'
 
 // GET /api/cards/ - List all flashcards
 export async function GET() {
   try {
-    const cards = await storage.getAll()
+    const cards = await dbRepository.getAll()
     return NextResponse.json(cards)
   } catch (error) {
     console.error('Error fetching flashcards:', error)
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const newCard = await storage.create(body)
+    const newCard = await dbRepository.create(body)
 
     return NextResponse.json(newCard, { status: 201 })
   } catch (error) {
