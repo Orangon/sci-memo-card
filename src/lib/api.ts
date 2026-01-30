@@ -31,7 +31,23 @@ class ApiClient {
     })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
+      // Try to extract error message from response body
+      let errorMessage = `API Error: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        if (errorData.error) {
+          errorMessage = errorData.error
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
+        }
+      } catch {
+        // If response is not JSON, use status text
+      }
+      throw new Error(errorMessage)
     }
 
     return response.json()
@@ -73,7 +89,23 @@ class ApiClient {
     })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
+      // Try to extract error message from response body
+      let errorMessage = `API Error: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        if (errorData.error) {
+          errorMessage = errorData.error
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData
+        }
+      } catch {
+        // If response is not JSON, use status text
+      }
+      throw new Error(errorMessage)
     }
 
     return response.blob()

@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
+import { withErrorHandler } from '@/lib/mutation-handler'
 import { FlashcardDisplay } from './FlashcardDisplay'
 import { ReviewButtons } from './ReviewButtons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RotateCcw } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 export function FlashcardReview() {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -22,26 +23,21 @@ export function FlashcardReview() {
   })
 
   // Submit review mutation
-  const reviewMutation = useMutation({
-    mutationFn: ({ cardId, mastery }: { cardId: number; mastery: 1 | 2 | 3 }) =>
-      apiClient.submitReview(cardId, { mastery }),
-    onSuccess: (data) => {
-      toast({
-        title: '复习完成',
-        description: data.message,
-      })
-      goToNextCard()
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['daily-random-cards'] })
-    },
-    onError: () => {
-      toast({
-        title: '错误',
-        description: '提交复习结果失败',
-        variant: 'destructive'
-      })
-    },
-  })
+  const reviewMutation = useMutation(
+    withErrorHandler({
+      mutationFn: ({ cardId, mastery }: { cardId: number; mastery: 1 | 2 | 3 }) =>
+        apiClient.submitReview(cardId, { mastery }),
+      onSuccess: (data) => {
+        toast({
+          title: '复习完成',
+          description: data.message,
+        })
+        goToNextCard()
+        // Invalidate and refetch
+        queryClient.invalidateQueries({ queryKey: ['daily-random-cards'] })
+      },
+    })
+  )
 
   const currentCard = cards[currentIndex]
 
