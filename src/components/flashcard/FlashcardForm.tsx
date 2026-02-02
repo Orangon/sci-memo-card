@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { FlashcardFormFields } from '@/components/flashcard/FlashcardFormFields'
 import { useToast } from '@/hooks/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { FormProvider, useForm } from 'react-hook-form'
 
 export function FlashcardForm() {
   const queryClient = useQueryClient()
@@ -24,14 +24,7 @@ export function FlashcardForm() {
     select: (domains) => domains.map(d => d.name),
   })
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    trigger,
-  } = useForm<FlashcardFormData>({
+  const methods = useForm<FlashcardFormData>({
     resolver: zodResolver(flashcardSchema),
     defaultValues: {
       sentence: '',
@@ -41,6 +34,8 @@ export function FlashcardForm() {
       domain: getDefaultDomain(),
     },
   })
+
+  const { handleSubmit, reset, trigger } = methods
 
   const createMutation = useMutation(
     withErrorHandler({
@@ -72,18 +67,17 @@ export function FlashcardForm() {
         <CardDescription>从科研文献中提取生词并添加上下文</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FlashcardFormFields
-            register={register}
-            control={control}
-            errors={errors}
-            presetDomains={presetDomains}
-          />
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FlashcardFormFields
+              presetDomains={presetDomains}
+            />
 
-          <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-            {createMutation.isPending ? '添加中...' : '添加闪卡'}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+              {createMutation.isPending ? '添加中...' : '添加闪卡'}
+            </Button>
+          </form>
+        </FormProvider>
       </CardContent>
     </Card>
   )

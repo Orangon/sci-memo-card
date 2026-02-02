@@ -8,7 +8,7 @@ import { updateFlashcardSchema, type UpdateFlashcardFormData } from '@/lib/flash
 import { withErrorHandler } from '@/lib/mutation-handler'
 import { useToast } from '@/hooks/use-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { FormProvider, useForm } from 'react-hook-form'
 import {
   Dialog,
   DialogContent,
@@ -37,14 +37,7 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
     select: (domains) => domains.map(d => d.name),
   })
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    trigger,
-  } = useForm<UpdateFlashcardFormData>({
+  const methods = useForm<UpdateFlashcardFormData>({
     resolver: zodResolver(updateFlashcardSchema),
     defaultValues: {
       sentence: card.sentence,
@@ -54,6 +47,8 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
       domain: card.domain || '',
     },
   })
+
+  const { handleSubmit, reset, trigger } = methods
 
   // Reset form when card changes
   useEffect(() => {
@@ -107,28 +102,27 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
           <DialogDescription>修改闪卡的内容</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FlashcardFormFields
-            register={register}
-            control={control}
-            errors={errors}
-            presetDomains={presetDomains}
-          />
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FlashcardFormFields
+              presetDomains={presetDomains}
+            />
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={updateMutation.isPending}
-            >
-              取消
-            </Button>
-            <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? '保存中...' : '保存'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={updateMutation.isPending}
+              >
+                取消
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? '保存中...' : '保存'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   )
