@@ -18,8 +18,8 @@ export function Navigation() {
 
   return (
     <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
+        <div className="flex flex-col items-center justify-center gap-2 py-3">
           <Link href="/add" className="text-xl font-bold text-gray-800 dark:text-gray-100">
             科研单词闪卡
           </Link>
