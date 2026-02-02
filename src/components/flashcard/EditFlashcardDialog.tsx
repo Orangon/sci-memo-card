@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
 import type { Flashcard, UpdateFlashcardDTO } from '@/lib/types'
 import { updateFlashcardSchema, type UpdateFlashcardFormData } from '@/lib/flashcard-schema'
 import { withErrorHandler } from '@/lib/mutation-handler'
@@ -33,7 +33,7 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
   // Fetch preset domains
   const { data: presetDomains = [] } = useQuery({
     queryKey: ['preset-domains'],
-    queryFn: () => apiClient.getAllPresetDomains(),
+    queryFn: () => clientData.getAllPresetDomains(),
     select: (domains) => domains.map(d => d.name),
   })
 
@@ -68,7 +68,7 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
 
   const updateMutation = useMutation(
     withErrorHandler({
-      mutationFn: (data: UpdateFlashcardDTO) => apiClient.updateCard(card.id, data),
+      mutationFn: (data: UpdateFlashcardDTO) => clientData.updateCard(card.id, data),
       onSuccess: (data) => {
         toast({
           title: '成功',

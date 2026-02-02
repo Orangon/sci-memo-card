@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
 import { withErrorHandler } from '@/lib/mutation-handler'
 import { FlashcardDisplay } from './FlashcardDisplay'
 import { ReviewButtons } from './ReviewButtons'
@@ -19,14 +19,14 @@ export function FlashcardReview() {
   // Fetch daily random cards
   const { data: cards = [], isLoading, error } = useQuery({
     queryKey: ['daily-random-cards'],
-    queryFn: () => apiClient.getDailyRandomCards(10),
+    queryFn: () => clientData.getDailyRandomCards(10),
   })
 
   // Submit review mutation
   const reviewMutation = useMutation(
     withErrorHandler({
       mutationFn: ({ cardId, mastery }: { cardId: number; mastery: 1 | 2 | 3 }) =>
-        apiClient.submitReview(cardId, { mastery }),
+        clientData.submitReview(cardId, { mastery }),
       onSuccess: (data) => {
         toast({
           title: '复习完成',

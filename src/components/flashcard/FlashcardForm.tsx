@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
 import type { CreateFlashcardDTO } from '@/lib/types'
 import { getDefaultDomain } from '@/lib/settings'
 import { flashcardSchema, type FlashcardFormData } from '@/lib/flashcard-schema'
@@ -20,7 +20,7 @@ export function FlashcardForm() {
   // Fetch preset domains
   const { data: presetDomains = [] } = useQuery({
     queryKey: ['preset-domains'],
-    queryFn: () => apiClient.getAllPresetDomains(),
+    queryFn: () => clientData.getAllPresetDomains(),
     select: (domains) => domains.map(d => d.name),
   })
 
@@ -44,7 +44,7 @@ export function FlashcardForm() {
 
   const createMutation = useMutation(
     withErrorHandler({
-      mutationFn: (data: CreateFlashcardDTO) => apiClient.createFlashcard(data),
+      mutationFn: (data: CreateFlashcardDTO) => clientData.createFlashcard(data),
       onSuccess: (data) => {
         toast({
           title: '成功',

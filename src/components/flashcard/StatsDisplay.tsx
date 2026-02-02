@@ -1,14 +1,14 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 
 export function StatsDisplay() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['statistics'],
-    queryFn: () => apiClient.getStatistics(),
+    queryFn: () => clientData.getStatistics(),
   })
 
   if (isLoading) {

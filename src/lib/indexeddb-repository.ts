@@ -1,5 +1,12 @@
-import { prisma } from './prisma'
-import { Flashcard, CreateFlashcardDTO, StatsOverview, PresetDomain } from './types'
+'use client'
+
+import { db, FlashcardSchema, PresetDomainSchema } from './indexeddb'
+import {
+  Flashcard,
+  CreateFlashcardDTO,
+  StatsOverview,
+  PresetDomain
+} from './types'
 
 // Initial preset domains to create on first run
 const INITIAL_PRESET_DOMAINS = ['通用', '心理学', 'DSM', 'GIS', 'LLM']
@@ -50,21 +57,22 @@ async function ensureInitialized(): Promise<void> {
 
 async function initializeSampleData(): Promise<void> {
   try {
-    const count = await prisma.flashcard.count()
+    const count = await db.flashcards.count()
 
     if (count === 0) {
       console.log('Database is empty, inserting initial sample data...')
+      const now = new Date().toISOString()
       for (const data of INITIAL_DATA) {
-        await prisma.flashcard.create({
-          data: {
-            sentence: data.sentence,
-            word: data.word,
-            translation: data.translation,
-            definition: data.definition,
-            domain: data.domain,
-            mastery: 1,
-            reviewCount: 0
-          }
+        await db.flashcards.add({
+          sentence: data.sentence,
+          word: data.word,
+          translation: data.translation,
+          definition: data.definition,
+          domain: data.domain,
+          mastery: 1,
+          review_count: 0,
+          next_review: now,
+          created_at: now
         })
       }
       console.log('Sample data inserted successfully')
@@ -79,12 +87,13 @@ async function initializeSampleData(): Promise<void> {
  */
 async function initializePresetDomains(): Promise<void> {
   try {
-    const count = await prisma.presetDomain.count()
+    const count = await db.presetDomains.count()
     if (count === 0) {
       console.log('Initializing preset domains...')
+      const now = new Date().toISOString()
       await Promise.all(
         INITIAL_PRESET_DOMAINS.map(name =>
-          prisma.presetDomain.create({ data: { name } })
+          db.presetDomains.add({ name, created_at: now })
         )
       )
       console.log('Preset domains initialized successfully')
@@ -95,60 +104,46 @@ async function initializePresetDomains(): Promise<void> {
 }
 
 /**
- * Convert Prisma model to Flashcard type
+ * Convert IndexedDB schema to Flashcard type
  */
-function toFlashcard(prismaCard: {
-  id: number
-  sentence: string
-  word: string
-  translation: string
-  definition: string | null
-  domain: string
-  mastery: number
-  reviewCount: number
-  nextReview: Date
-  createdAt: Date
-}): Flashcard {
+function toFlashcard(schema: FlashcardSchema): Flashcard {
   return {
-    id: prismaCard.id,
-    sentence: prismaCard.sentence,
-    word: prismaCard.word,
-    translation: prismaCard.translation,
-    definition: prismaCard.definition || '',
-    domain: prismaCard.domain,
-    mastery: prismaCard.mastery as 1 | 2 | 3,
-    review_count: prismaCard.reviewCount,
-    next_review: prismaCard.nextReview.toISOString(),
-    created_at: prismaCard.createdAt.toISOString()
+    id: schema.id!,
+    sentence: schema.sentence,
+    word: schema.word,
+    translation: schema.translation,
+    definition: schema.definition || '',
+    domain: schema.domain,
+    mastery: schema.mastery,
+    review_count: schema.review_count,
+    next_review: schema.next_review,
+    created_at: schema.created_at
   }
 }
 
 /**
- * Convert Prisma model to PresetDomain type
+ * Convert IndexedDB schema to PresetDomain type
  */
-function toPresetDomain(prismaDomain: {
-  id: number
-  name: string
-  createdAt: Date
-}): PresetDomain {
+function toPresetDomain(schema: PresetDomainSchema): PresetDomain {
   return {
-    id: prismaDomain.id,
-    name: prismaDomain.name,
-    created_at: prismaDomain.createdAt.toISOString()
+    id: schema.id!,
+    name: schema.name,
+    created_at: schema.created_at
   }
 }
 
-// Database Repository with Prisma
-export const dbRepository = {
+// Database Repository with IndexedDB
+export const indexedDbRepository = {
   /**
    * Get all flashcards, ordered by creation date (newest first)
    */
   async getAll(): Promise<Flashcard[]> {
     await ensureInitialized()
     try {
-      const cards = await prisma.flashcard.findMany({
-        orderBy: { createdAt: 'desc' }
-      })
+      const cards = await db.flashcards
+        .orderBy('created_at')
+        .reverse()
+        .toArray()
       return cards.map(toFlashcard)
     } catch (error) {
       console.error('Failed to get all flashcards:', error)
@@ -162,9 +157,7 @@ export const dbRepository = {
   async getById(id: number): Promise<Flashcard | null> {
     await ensureInitialized()
     try {
-      const card = await prisma.flashcard.findUnique({
-        where: { id }
-      })
+      const card = await db.flashcards.get(id)
       return card ? toFlashcard(card) : null
     } catch (error) {
       console.error('Failed to get flashcard by id:', error)
@@ -177,18 +170,21 @@ export const dbRepository = {
    */
   async create(data: CreateFlashcardDTO): Promise<Flashcard> {
     await ensureInitialized()
+    const now = new Date().toISOString()
     try {
-      const card = await prisma.flashcard.create({
-        data: {
-          sentence: data.sentence,
-          word: data.word,
-          translation: data.translation,
-          definition: data.definition || '',
-          domain: data.domain || '通用',
-          mastery: 1,
-          reviewCount: 0
-        }
+      const id = await db.flashcards.add({
+        sentence: data.sentence,
+        word: data.word,
+        translation: data.translation,
+        definition: data.definition || '',
+        domain: data.domain || '通用',
+        mastery: 1,
+        review_count: 0,
+        next_review: now,
+        created_at: now
       })
+      const card = await db.flashcards.get(id)
+      if (!card) throw new Error('Failed to create flashcard')
       return toFlashcard(card)
     } catch (error) {
       console.error('Failed to create flashcard:', error)
@@ -202,20 +198,22 @@ export const dbRepository = {
   async update(id: number, updates: Partial<Omit<Flashcard, 'id' | 'created_at'>>): Promise<Flashcard | null> {
     await ensureInitialized()
     try {
-      const card = await prisma.flashcard.update({
-        where: { id },
-        data: {
-          ...(updates.sentence !== undefined && { sentence: updates.sentence }),
-          ...(updates.word !== undefined && { word: updates.word }),
-          ...(updates.translation !== undefined && { translation: updates.translation }),
-          ...(updates.definition !== undefined && { definition: updates.definition }),
-          ...(updates.domain !== undefined && { domain: updates.domain }),
-          ...(updates.mastery !== undefined && { mastery: updates.mastery }),
-          ...(updates.review_count !== undefined && { reviewCount: updates.review_count }),
-          ...(updates.next_review !== undefined && { nextReview: new Date(updates.next_review) })
-        }
-      })
-      return toFlashcard(card)
+      const existing = await db.flashcards.get(id)
+      if (!existing) return null
+
+      const updateData: Partial<FlashcardSchema> = {}
+      if (updates.sentence !== undefined) updateData.sentence = updates.sentence
+      if (updates.word !== undefined) updateData.word = updates.word
+      if (updates.translation !== undefined) updateData.translation = updates.translation
+      if (updates.definition !== undefined) updateData.definition = updates.definition
+      if (updates.domain !== undefined) updateData.domain = updates.domain
+      if (updates.mastery !== undefined) updateData.mastery = updates.mastery
+      if (updates.review_count !== undefined) updateData.review_count = updates.review_count
+      if (updates.next_review !== undefined) updateData.next_review = updates.next_review
+
+      await db.flashcards.update(id, updateData)
+      const card = await db.flashcards.get(id)
+      return card ? toFlashcard(card) : null
     } catch (error) {
       console.error('Failed to update flashcard:', error)
       return null
@@ -228,9 +226,7 @@ export const dbRepository = {
   async delete(id: number): Promise<boolean> {
     await ensureInitialized()
     try {
-      await prisma.flashcard.delete({
-        where: { id }
-      })
+      await db.flashcards.delete(id)
       return true
     } catch (error) {
       console.error('Failed to delete flashcard:', error)
@@ -244,7 +240,7 @@ export const dbRepository = {
   async clear(): Promise<void> {
     await ensureInitialized()
     try {
-      await prisma.flashcard.deleteMany({})
+      await db.flashcards.clear()
     } catch (error) {
       console.error('Failed to clear flashcards:', error)
       throw error
@@ -258,19 +254,17 @@ export const dbRepository = {
   async getDailyRandom(limit: number = 10): Promise<Flashcard[]> {
     await ensureInitialized()
     try {
-      const now = new Date()
+      const now = new Date().toISOString()
 
       // Get cards that are due for review
-      const dueCards = await prisma.flashcard.findMany({
-        where: {
-          nextReview: { lte: now }
-        },
-        orderBy: [{ mastery: 'asc' }]
-      })
+      const dueCards = await db.flashcards
+        .where('next_review')
+        .belowOrEqual(now)
+        .toArray()
 
       if (dueCards.length > 0) {
         // Apply weighted selection: lower mastery = higher weight
-        const weightedCards: Array<{ card: typeof dueCards[0]; weight: number }> = dueCards.map(card => ({
+        const weightedCards: Array<{ card: FlashcardSchema; weight: number }> = dueCards.map(card => ({
           card,
           weight: 4 - card.mastery // mastery 1 = weight 3, mastery 2 = weight 2, mastery 3 = weight 1
         }))
@@ -283,14 +277,17 @@ export const dbRepository = {
 
         // Sort by weight (descending) and take top N
         weightedCards.sort((a, b) => b.weight - a.weight)
-        return weightedCards.slice(0, Math.min(limit, weightedCards.length)).map(w => toFlashcard(w.card))
+        return weightedCards
+          .slice(0, Math.min(limit, weightedCards.length))
+          .map(w => toFlashcard(w.card))
       }
 
       // No cards due, return cards with lowest mastery
-      const fallbackCards = await prisma.flashcard.findMany({
-        orderBy: [{ mastery: 'asc' }, { createdAt: 'desc' }],
-        take: limit
-      })
+      const fallbackCards = await db.flashcards
+        .orderBy('mastery')
+        .limit(limit)
+        .toArray()
+
       return fallbackCards.map(toFlashcard)
     } catch (error) {
       console.error('Failed to get daily random cards:', error)
@@ -304,23 +301,17 @@ export const dbRepository = {
   async getStats(): Promise<StatsOverview> {
     await ensureInitialized()
     try {
-      // Get total and mastered counts
-      const [totalCards, masteredCards] = await Promise.all([
-        prisma.flashcard.count(),
-        prisma.flashcard.count({ where: { mastery: 3 } })
-      ])
+      const allCards = await db.flashcards.toArray()
+
+      const totalCards = allCards.length
+      const masteredCards = allCards.filter(c => c.mastery === 3).length
       const masteryRate = totalCards > 0 ? (masteredCards / totalCards) * 100 : 0
 
-      // Get domain distribution using groupBy
-      const domainGroups = await prisma.flashcard.groupBy({
-        by: ['domain'],
-        _count: { domain: true },
-        orderBy: { _count: { domain: 'desc' } }
-      })
-
+      // Get domain distribution
       const domainDistribution: Record<string, number> = {}
-      domainGroups.forEach(group => {
-        domainDistribution[group.domain] = group._count.domain
+      allCards.forEach(card => {
+        const domain = card.domain || '未分类'
+        domainDistribution[domain] = (domainDistribution[domain] || 0) + 1
       })
 
       return {
@@ -346,9 +337,9 @@ export const dbRepository = {
   async getAllPresetDomains(): Promise<PresetDomain[]> {
     await ensureInitialized()
     try {
-      const domains = await prisma.presetDomain.findMany({
-        orderBy: { createdAt: 'asc' }
-      })
+      const domains = await db.presetDomains
+        .orderBy('created_at')
+        .toArray()
       return domains.map(toPresetDomain)
     } catch (error) {
       console.error('Failed to get preset domains:', error)
@@ -361,7 +352,10 @@ export const dbRepository = {
    */
   async createPresetDomain(name: string): Promise<PresetDomain> {
     await ensureInitialized()
-    const domain = await prisma.presetDomain.create({ data: { name } })
+    const now = new Date().toISOString()
+    const id = await db.presetDomains.add({ name, created_at: now })
+    const domain = await db.presetDomains.get(id)
+    if (!domain) throw new Error('Failed to create preset domain')
     return toPresetDomain(domain)
   },
 
@@ -371,30 +365,95 @@ export const dbRepository = {
   async updatePresetDomain(id: number, name: string): Promise<PresetDomain | null> {
     await ensureInitialized()
     try {
-      const domain = await prisma.presetDomain.update({
-        where: { id },
-        data: { name }
-      })
-      return toPresetDomain(domain)
+      await db.presetDomains.update(id, { name })
+      const domain = await db.presetDomains.get(id)
+      return domain ? toPresetDomain(domain) : null
     } catch {
       return null
     }
   },
 
   /**
-   * Delete preset domain and set related flashcards' domain to NULL
+   * Delete preset domain and set related flashcards' domain to '通用'
    */
   async deletePresetDomain(id: number, name: string): Promise<boolean> {
     await ensureInitialized()
     try {
-      await prisma.flashcard.updateMany({
-        where: { domain: name },
-        data: { domain: null }
-      })
-      await prisma.presetDomain.delete({ where: { id } })
+      // Update related flashcards to use '通用' domain
+      await db.flashcards
+        .where('domain')
+        .equals(name)
+        .modify({ domain: '通用' })
+
+      await db.presetDomains.delete(id)
       return true
     } catch {
       return false
     }
+  },
+
+  /**
+   * Export all data from IndexedDB (for backup/migration)
+   */
+  async exportAllData(): Promise<{ flashcards: Flashcard[]; presetDomains: PresetDomain[] }> {
+    const [flashcards, presetDomains] = await Promise.all([
+      db.flashcards.toArray(),
+      db.presetDomains.toArray()
+    ])
+
+    return {
+      flashcards: flashcards.map(toFlashcard),
+      presetDomains: presetDomains.map(toPresetDomain)
+    }
+  },
+
+  /**
+   * Import data to IndexedDB (for backup/migration)
+   */
+  async importData(
+    data: { flashcards: Flashcard[]; presetDomains: PresetDomain[] },
+    mode: 'overwrite' | 'append'
+  ): Promise<{ flashcards: number; presetDomains: number }> {
+    if (mode === 'overwrite') {
+      await db.flashcards.clear()
+      await db.presetDomains.clear()
+    }
+
+    // Import preset domains first
+    let domainsImported = 0
+    for (const domain of data.presetDomains) {
+      try {
+        await db.presetDomains.add({
+          name: domain.name,
+          created_at: domain.created_at
+        })
+        domainsImported++
+      } catch {
+        // Skip duplicates in append mode
+      }
+    }
+
+    // Import flashcards
+    let cardsImported = 0
+    for (const card of data.flashcards) {
+      try {
+        await db.flashcards.add({
+          sentence: card.sentence,
+          word: card.word,
+          translation: card.translation,
+          definition: card.definition,
+          domain: card.domain,
+          mastery: card.mastery,
+          review_count: card.review_count,
+          next_review: card.next_review,
+          created_at: card.created_at
+        })
+        cardsImported++
+      } catch {
+        // Skip duplicates in append mode
+      }
+    }
+
+    return { flashcards: cardsImported, presetDomains: domainsImported }
   }
 }

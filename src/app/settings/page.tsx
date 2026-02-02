@@ -25,7 +25,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
+import { downloadBackup, restoreBackup, validateBackupFile } from '@/lib/backup'
 import { getDefaultDomain, saveDefaultDomain } from '@/lib/settings'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import type { PresetDomain } from '@/lib/types'
@@ -59,12 +60,12 @@ export default function SettingsPage() {
   // Fetch preset domains
   const { data: presetDomains = [] } = useQuery({
     queryKey: ['preset-domains'],
-    queryFn: () => apiClient.getAllPresetDomains(),
+    queryFn: () => clientData.getAllPresetDomains(),
   })
 
   // Domain mutations
   const createMutation = useMutation({
-    mutationFn: (name: string) => apiClient.createPresetDomain({ name }),
+    mutationFn: (name: string) => clientData.createPresetDomain({ name }),
     onSuccess: () => {
       toast({
         title: '创建成功',
@@ -85,7 +86,7 @@ export default function SettingsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) =>
-      apiClient.updatePresetDomain(id, { name }),
+      clientData.updatePresetDomain(id, { name }),
     onSuccess: () => {
       toast({
         title: '更新成功',
@@ -105,7 +106,7 @@ export default function SettingsPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.deletePresetDomain(id),
+    mutationFn: (id: number) => clientData.deletePresetDomain(id),
     onSuccess: () => {
       toast({
         title: '删除成功',
@@ -126,20 +127,7 @@ export default function SettingsPage() {
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const blob = await apiClient.exportData()
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `flashcards-export-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-
-      // Cleanup
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-
+      await downloadBackup()
       toast({
         title: '导出成功',
         description: '学习数据已成功导出为 JSON 文件',
@@ -209,17 +197,14 @@ export default function SettingsPage() {
 
     setIsImporting(true)
     try {
-      // Read file content
-      const text = await importFile.text()
-      const cards = JSON.parse(text)
-
-      // Validate that it's an array
-      if (!Array.isArray(cards)) {
-        throw new Error('Invalid file format: expected an array of flashcards')
+      // Validate file format
+      const isValid = await validateBackupFile(importFile)
+      if (!isValid) {
+        throw new Error('Invalid file format: expected a backup JSON file')
       }
 
-      // Import via API with mode
-      const result = await apiClient.importData(cards, selectedImportMode)
+      // Import via backup utility with mode
+      const result = await restoreBackup(importFile, selectedImportMode)
 
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries()
@@ -434,12 +419,7 @@ export default function SettingsPage() {
                         return
                       }
                       try {
-                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/cards/clear`, {
-                          method: 'DELETE',
-                        })
-                        if (!response.ok) {
-                          throw new Error('Failed to clear data')
-                        }
+                        await clientData.clearAllCards()
                         queryClient.invalidateQueries()
                         toast({
                           title: '清空成功',

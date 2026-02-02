@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { clientData } from '@/lib/client-data'
 import type { Flashcard } from '@/lib/types'
 import { withErrorHandler } from '@/lib/mutation-handler'
 import { useToast } from '@/hooks/use-toast'
@@ -46,13 +46,13 @@ export function CardManagement() {
   // Fetch all cards
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ['all-cards'],
-    queryFn: () => apiClient.getAllCards(),
+    queryFn: () => clientData.getAllCards(),
   })
 
   // Delete mutation
   const deleteMutation = useMutation(
     withErrorHandler({
-      mutationFn: (id: number) => apiClient.deleteCard(id),
+      mutationFn: (id: number) => clientData.deleteCard(id),
       onSuccess: () => {
         toast({
           title: '成功',
