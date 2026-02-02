@@ -21,6 +21,15 @@ export interface CreateFlashcardDTO {
   domain?: string
 }
 
+// Update flashcard input (all fields optional)
+export interface UpdateFlashcardDTO {
+  sentence?: string
+  word?: string
+  translation?: string
+  definition?: string
+  domain?: string
+}
+
 // Review result input
 export interface ReviewResultDTO {
   mastery: 1 | 2 | 3

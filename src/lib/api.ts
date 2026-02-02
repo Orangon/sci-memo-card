@@ -1,6 +1,7 @@
 import {
   Flashcard,
   CreateFlashcardDTO,
+  UpdateFlashcardDTO,
   ReviewResultDTO,
   ReviewResponse,
   StatsOverview,
@@ -124,6 +125,26 @@ class ApiClient {
     return this.request(`/cards/import?mode=${mode}`, {
       method: 'POST',
       body: JSON.stringify(cards),
+    })
+  }
+
+  // Get all flashcards
+  async getAllCards(): Promise<Flashcard[]> {
+    return this.request<Flashcard[]>('/cards/')
+  }
+
+  // Update flashcard
+  async updateCard(id: number, data: UpdateFlashcardDTO): Promise<Flashcard> {
+    return this.request<Flashcard>(`/cards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Delete flashcard
+  async deleteCard(id: number): Promise<void> {
+    return this.request<void>(`/cards/${id}`, {
+      method: 'DELETE',
     })
   }
 }

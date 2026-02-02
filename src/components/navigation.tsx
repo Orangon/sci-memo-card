@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { FlipHorizontal, Plus, BarChart3, Settings } from 'lucide-react'
+import { FlipHorizontal, Plus, BarChart3, Settings, List } from 'lucide-react'
 
 const navItems = [
   { href: '/add', label: '添加', icon: Plus },
   { href: '/review', label: '复习', icon: FlipHorizontal },
   { href: '/stats', label: '统计', icon: BarChart3 },
+  { href: '/manage', label: '管理', icon: List },
   { href: '/settings', label: '设置', icon: Settings },
 ]
 
