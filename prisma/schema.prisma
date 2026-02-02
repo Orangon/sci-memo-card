@@ -9,13 +9,22 @@ datasource db {
   provider = "postgresql"
 }
 
+model PresetDomain {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("preset_domains")
+  @@index([name], map: "idx_preset_domain_name")
+}
+
 model Flashcard {
   id          Int      @id @default(autoincrement())
   sentence    String   @db.Text
   word        String   @db.VarChar(255)
   translation String   @db.Text
   definition  String?  @db.Text
-  domain      String   @default("通用") @db.VarChar(100)
+  domain      String?  @db.VarChar(100)
   mastery     Int      @default(1) @db.SmallInt
   reviewCount Int      @default(0) @map("review_count")
   nextReview  DateTime @default(now()) @map("next_review")

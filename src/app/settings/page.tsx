@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,9 +17,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { apiClient } from '@/lib/api'
 import { getDefaultDomain, saveDefaultDomain } from '@/lib/settings'
+import { Plus, Edit2, Trash2 } from 'lucide-react'
+import type { PresetDomain } from '@/lib/types'
 
 type ImportMode = 'overwrite' | 'append'
 
@@ -33,11 +42,85 @@ export default function SettingsPage() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [selectedImportMode, setSelectedImportMode] = useState<ImportMode | null>(null)
 
+  // Domain management state
+  const [editDialog, setEditDialog] = useState({
+    isOpen: false,
+    domain: null as PresetDomain | null,
+    mode: 'create' as 'create' | 'edit'
+  })
+  const [domainName, setDomainName] = useState('')
+
   // Load default domain on mount
   useEffect(() => {
     const savedDomain = getDefaultDomain()
     setDefaultDomain(savedDomain)
   }, [])
+
+  // Fetch preset domains
+  const { data: presetDomains = [] } = useQuery({
+    queryKey: ['preset-domains'],
+    queryFn: () => apiClient.getAllPresetDomains(),
+  })
+
+  // Domain mutations
+  const createMutation = useMutation({
+    mutationFn: (name: string) => apiClient.createPresetDomain({ name }),
+    onSuccess: () => {
+      toast({
+        title: '创建成功',
+        description: '学科领域已添加',
+      })
+      setEditDialog({ isOpen: false, domain: null, mode: 'create' })
+      setDomainName('')
+      queryClient.invalidateQueries({ queryKey: ['preset-domains'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: '创建失败',
+        description: error.message || '创建学科领域时出现错误',
+        variant: 'destructive',
+      })
+    }
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      apiClient.updatePresetDomain(id, { name }),
+    onSuccess: () => {
+      toast({
+        title: '更新成功',
+        description: '学科领域已更新',
+      })
+      setEditDialog({ isOpen: false, domain: null, mode: 'create' })
+      setDomainName('')
+      queryClient.invalidateQueries({ queryKey: ['preset-domains'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: '更新失败',
+        description: error.message || '更新学科领域时出现错误',
+        variant: 'destructive',
+      })
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiClient.deletePresetDomain(id),
+    onSuccess: () => {
+      toast({
+        title: '删除成功',
+        description: '学科领域已删除',
+      })
+      queryClient.invalidateQueries({ queryKey: ['preset-domains'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: '删除失败',
+        description: error.message || '删除学科领域时出现错误',
+        variant: 'destructive',
+      })
+    }
+  })
 
   // Handle export functionality
   const handleExport = async () => {
@@ -282,6 +365,58 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Domain Management */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label>学科领域管理</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDomainName('')
+                      setEditDialog({ isOpen: true, domain: null, mode: 'create' })
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    添加新领域
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500">管理预设的学科领域列表</p>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {presetDomains.map((domain) => (
+                    <div key={domain.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm font-medium">{domain.name}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setDomainName(domain.name)
+                            setEditDialog({ isOpen: true, domain, mode: 'edit' })
+                          }}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => {
+                            if (confirm(`确定删除 "${domain.name}"? 相关闪卡的领域将被清空。`)) {
+                              deleteMutation.mutate(domain.id)
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Danger Zone */}
               <div className="space-y-4 pt-4 border-t">
                 <Label className="text-red-600">危险操作</Label>
@@ -380,6 +515,55 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Domain Edit Dialog */}
+      <Dialog open={editDialog.isOpen} onOpenChange={(open) => setEditDialog(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editDialog.mode === 'create' ? '添加新领域' : '编辑领域'}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="例如: 计算机科学"
+              value={domainName}
+              onChange={(e) => setDomainName(e.target.value)}
+              maxLength={100}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialog({ isOpen: false, domain: null, mode: 'create' })}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                if (!domainName.trim()) {
+                  toast({
+                    title: '输入无效',
+                    description: '请输入学科领域名称',
+                    variant: 'destructive',
+                  })
+                  return
+                }
+                if (editDialog.mode === 'create') {
+                  createMutation.mutate(domainName.trim())
+                } else {
+                  updateMutation.mutate({ id: editDialog.domain!.id, name: domainName.trim() })
+                }
+              }}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? (editDialog.mode === 'create' ? '创建中...' : '保存中...')
+                : (editDialog.mode === 'create' ? '创建' : '保存')
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import type { Flashcard, UpdateFlashcardDTO } from '@/lib/types'
 import { updateFlashcardSchema, type UpdateFlashcardFormData } from '@/lib/flashcard-schema'
@@ -30,8 +30,16 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
+  // Fetch preset domains
+  const { data: presetDomains = [] } = useQuery({
+    queryKey: ['preset-domains'],
+    queryFn: () => apiClient.getAllPresetDomains(),
+    select: (domains) => domains.map(d => d.name),
+  })
+
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
     reset,
@@ -68,6 +76,7 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
         })
         queryClient.invalidateQueries({ queryKey: ['all-cards'] })
         queryClient.invalidateQueries({ queryKey: ['daily-random-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['preset-domains'] })
         onOpenChange(false)
       },
     })
@@ -99,7 +108,12 @@ export function EditFlashcardDialog({ card, open, onOpenChange }: EditFlashcardD
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FlashcardFormFields register={register} errors={errors} />
+          <FlashcardFormFields
+            register={register}
+            control={control}
+            errors={errors}
+            presetDomains={presetDomains}
+          />
 
           <DialogFooter>
             <Button

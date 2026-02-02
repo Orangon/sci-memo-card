@@ -29,6 +29,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Auto-create preset domain if custom domain is provided and not empty
+    if (body.domain && body.domain.trim()) {
+      const trimmedDomain = body.domain.trim()
+      const existingDomains = await dbRepository.getAllPresetDomains()
+      const domainExists = existingDomains.some(d => d.name === trimmedDomain)
+
+      if (!domainExists) {
+        try {
+          await dbRepository.createPresetDomain(trimmedDomain)
+        } catch (error) {
+          // Ignore duplicate errors (race condition), log other errors
+          console.error('Error auto-creating preset domain:', error)
+        }
+      }
+    }
+
     const newCard = await dbRepository.create(body)
 
     return NextResponse.json(newCard, { status: 201 })

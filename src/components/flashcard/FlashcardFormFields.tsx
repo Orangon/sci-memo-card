@@ -2,17 +2,22 @@
 
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Controller } from 'react-hook-form'
 
 interface FlashcardFormFieldsProps {
   register: any // Generic register that works with both FlashcardFormData and UpdateFlashcardFormData
   errors: any // Generic errors object
+  control?: any // For Controller component (optional for edit dialog)
+  presetDomains?: string[] // List of preset domain names
 }
 
 /**
  * Reusable form fields component for flashcard creation and editing.
  * Used by both FlashcardForm (Card) and EditFlashcardDialog (Dialog).
  */
-export function FlashcardFormFields({ register, errors }: FlashcardFormFieldsProps) {
+export function FlashcardFormFields({ register, errors, control, presetDomains }: FlashcardFormFieldsProps) {
   return (
     <>
       {/* 文献句子 */}
@@ -71,15 +76,46 @@ export function FlashcardFormFields({ register, errors }: FlashcardFormFieldsPro
         )}
       </div>
 
-      {/* 学科领域 */}
-      <div className="space-y-2">
+      {/* 学科领域 - Radio Group for preset domains + custom input */}
+      <div className="space-y-3">
         <Label htmlFor="domain">学科领域</Label>
-        <Textarea
-          id="domain"
-          placeholder="输入学科领域..."
-          className={`min-h-[60px] ${errors.domain ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-          {...register('domain')}
-        />
+
+        {presetDomains && presetDomains.length > 0 && control && (
+          <Controller
+            name="domain"
+            control={control}
+            render={({ field }) => (
+              <RadioGroup
+                value={field.value || ''}
+                onValueChange={field.onChange}
+                className="grid grid-cols-2 md:grid-cols-3 gap-2"
+              >
+                {presetDomains.map((domainName) => (
+                  <div key={domainName} className="flex items-center space-x-2">
+                    <RadioGroupItem value={domainName} id={`domain-${domainName}`} />
+                    <Label
+                      htmlFor={`domain-${domainName}`}
+                      className="cursor-pointer text-sm font-normal"
+                    >
+                      {domainName}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            )}
+          />
+        )}
+
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground">或输入自定义领域:</div>
+          <Input
+            id="domain"
+            placeholder="例如: 计算机科学, 生物学..."
+            className={errors.domain ? 'border-destructive' : ''}
+            {...register('domain')}
+          />
+        </div>
+
         {errors.domain && (
           <p className="text-sm text-destructive">{errors.domain.message}</p>
         )}

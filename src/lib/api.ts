@@ -5,6 +5,9 @@ import {
   ReviewResultDTO,
   ReviewResponse,
   StatsOverview,
+  PresetDomain,
+  CreatePresetDomainDTO,
+  UpdatePresetDomainDTO,
 } from './types'
 
 const API_BASE_URL =
@@ -144,6 +147,34 @@ class ApiClient {
   // Delete flashcard
   async deleteCard(id: number): Promise<void> {
     return this.request<void>(`/cards/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Get all preset domains
+  async getAllPresetDomains(): Promise<PresetDomain[]> {
+    return this.request<PresetDomain[]>('/domains')
+  }
+
+  // Create new preset domain
+  async createPresetDomain(data: CreatePresetDomainDTO): Promise<PresetDomain> {
+    return this.request<PresetDomain>('/domains', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Update preset domain
+  async updatePresetDomain(id: number, data: UpdatePresetDomainDTO): Promise<PresetDomain> {
+    return this.request<PresetDomain>(`/domains/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Delete preset domain
+  async deletePresetDomain(id: number): Promise<void> {
+    return this.request<void>(`/domains/${id}`, {
       method: 'DELETE',
     })
   }

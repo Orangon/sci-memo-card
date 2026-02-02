@@ -12,6 +12,13 @@ export interface Flashcard {
   created_at: string
 }
 
+// Preset domain model
+export interface PresetDomain {
+  id: number
+  name: string
+  created_at: string
+}
+
 // Create flashcard input
 export interface CreateFlashcardDTO {
   sentence: string
@@ -47,4 +54,14 @@ export interface StatsOverview {
 export interface ReviewResponse {
   message: string
   updated_card: Flashcard
+}
+
+// Create preset domain input
+export interface CreatePresetDomainDTO {
+  name: string
+}
+
+// Update preset domain input
+export interface UpdatePresetDomainDTO {
+  name: string
 }

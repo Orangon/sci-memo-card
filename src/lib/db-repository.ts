@@ -1,5 +1,8 @@
 import { prisma } from './prisma'
-import { Flashcard, CreateFlashcardDTO, StatsOverview } from './types'
+import { Flashcard, CreateFlashcardDTO, StatsOverview, PresetDomain } from './types'
+
+// Initial preset domains to create on first run
+const INITIAL_PRESET_DOMAINS = ['通用', '心理学', 'DSM', 'GIS', 'LLM']
 
 // Initial sample data (used when database is empty)
 const INITIAL_DATA: Omit<Flashcard, 'id' | 'next_review' | 'created_at' | 'mastery' | 'review_count'>[] = [
@@ -36,6 +39,7 @@ async function ensureInitialized(): Promise<void> {
   if (!isInitialized) {
     try {
       await initializeSampleData()
+      await initializePresetDomains()
       isInitialized = true
     } catch (error) {
       console.error('Failed to initialize database:', error)
@@ -71,6 +75,26 @@ async function initializeSampleData(): Promise<void> {
 }
 
 /**
+ * Initialize preset domains if not exists
+ */
+async function initializePresetDomains(): Promise<void> {
+  try {
+    const count = await prisma.presetDomain.count()
+    if (count === 0) {
+      console.log('Initializing preset domains...')
+      await Promise.all(
+        INITIAL_PRESET_DOMAINS.map(name =>
+          prisma.presetDomain.create({ data: { name } })
+        )
+      )
+      console.log('Preset domains initialized successfully')
+    }
+  } catch (error) {
+    console.error('Failed to initialize preset domains:', error)
+  }
+}
+
+/**
  * Convert Prisma model to Flashcard type
  */
 function toFlashcard(prismaCard: {
@@ -96,6 +120,21 @@ function toFlashcard(prismaCard: {
     review_count: prismaCard.reviewCount,
     next_review: prismaCard.nextReview.toISOString(),
     created_at: prismaCard.createdAt.toISOString()
+  }
+}
+
+/**
+ * Convert Prisma model to PresetDomain type
+ */
+function toPresetDomain(prismaDomain: {
+  id: number
+  name: string
+  createdAt: Date
+}): PresetDomain {
+  return {
+    id: prismaDomain.id,
+    name: prismaDomain.name,
+    created_at: prismaDomain.createdAt.toISOString()
   }
 }
 
@@ -298,6 +337,64 @@ export const dbRepository = {
         mastery_rate: 0,
         domain_distribution: {}
       }
+    }
+  },
+
+  /**
+   * Get all preset domains
+   */
+  async getAllPresetDomains(): Promise<PresetDomain[]> {
+    await ensureInitialized()
+    try {
+      const domains = await prisma.presetDomain.findMany({
+        orderBy: { createdAt: 'asc' }
+      })
+      return domains.map(toPresetDomain)
+    } catch (error) {
+      console.error('Failed to get preset domains:', error)
+      return []
+    }
+  },
+
+  /**
+   * Create new preset domain
+   */
+  async createPresetDomain(name: string): Promise<PresetDomain> {
+    await ensureInitialized()
+    const domain = await prisma.presetDomain.create({ data: { name } })
+    return toPresetDomain(domain)
+  },
+
+  /**
+   * Update preset domain
+   */
+  async updatePresetDomain(id: number, name: string): Promise<PresetDomain | null> {
+    await ensureInitialized()
+    try {
+      const domain = await prisma.presetDomain.update({
+        where: { id },
+        data: { name }
+      })
+      return toPresetDomain(domain)
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * Delete preset domain and set related flashcards' domain to NULL
+   */
+  async deletePresetDomain(id: number, name: string): Promise<boolean> {
+    await ensureInitialized()
+    try {
+      await prisma.flashcard.updateMany({
+        where: { domain: name },
+        data: { domain: null }
+      })
+      await prisma.presetDomain.delete({ where: { id } })
+      return true
+    } catch {
+      return false
     }
   }
 }

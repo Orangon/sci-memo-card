@@ -43,6 +43,11 @@ export function FlashcardDisplay({
           <Badge variant={isOverdue ? "destructive" : "secondary"}>
             {isOverdue ? "待复习" : "未到期"}
           </Badge>
+          {card.domain && (
+            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900 text-purple-700 dark:text-purple-100 border-purple-200 dark:border-purple-700">
+              📚 {card.domain}
+            </Badge>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={onPrev} disabled={currentIndex === 0}>

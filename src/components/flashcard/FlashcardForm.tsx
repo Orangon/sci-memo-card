@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import type { CreateFlashcardDTO } from '@/lib/types'
 import { getDefaultDomain } from '@/lib/settings'
@@ -17,8 +17,16 @@ export function FlashcardForm() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
+  // Fetch preset domains
+  const { data: presetDomains = [] } = useQuery({
+    queryKey: ['preset-domains'],
+    queryFn: () => apiClient.getAllPresetDomains(),
+    select: (domains) => domains.map(d => d.name),
+  })
+
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
     reset,
@@ -44,6 +52,7 @@ export function FlashcardForm() {
         })
         reset()
         queryClient.invalidateQueries({ queryKey: ['daily-random-cards'] })
+        queryClient.invalidateQueries({ queryKey: ['preset-domains'] })
       },
     })
   )
@@ -64,7 +73,12 @@ export function FlashcardForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FlashcardFormFields register={register} errors={errors} />
+          <FlashcardFormFields
+            register={register}
+            control={control}
+            errors={errors}
+            presetDomains={presetDomains}
+          />
 
           <Button type="submit" className="w-full" disabled={createMutation.isPending}>
             {createMutation.isPending ? '添加中...' : '添加闪卡'}
