@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Flashcard } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,12 @@ export function FlashcardDisplay({
 }: FlashcardDisplayProps) {
   const [isFlipped, setIsFlipped] = useState(false)
   const isOverdue = card.next_review && new Date(card.next_review) <= new Date()
+
+  // Reset flip state when card changes
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setIsFlipped(false)
+  }, [card.id])
 
   // Split sentence by target word (case-insensitive, using word boundaries)
   const wordPattern = new RegExp(`(\\b${card.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b)`, 'gi')
